@@ -1,0 +1,397 @@
+@startuml
+activate user
+activate MusicPlayer
+user -> MusicPlayer : users enters files in the command line
+|||
+
+alt successful case
+	MusicPlayer -> user : Files are accepted 
+	note right
+	    all Files are valid 
+	end note
+	
+else Some files are invalid or corrupted
+          
+	MusicPlayer -> user : Inavlid  <CORRUPTED_FILENAME> 
+	note right
+	    skip the corrupted file and
+	    move to the next file in the command line
+	end note
+else files not able to open
+    MusicPlayer -> user : unable to open the  <TXT_FILENAME>
+    note right
+	    if txtfile(i.e playlist) is not able open
+	    and move to the next file in the command line
+	end note
+else no input files
+    MusicPlayer -> user : <FILES NOT FOUND>
+end
+== with random command ==
+user -> MusicPlayer : users enters files with random command
+MusicPlayer -> user :  shuffles all the files in commandline
+    note right
+	    It doesn't see the wheather file is corrupted 
+	    or invalid its just shuflles the files. 
+	end note
+@enduml
+
+
+
+
+===========================================================SEEK FORWARD==============================================================
+
+
+@startuml
+activate user
+activate MusicPlayer
+user -> MusicPlayer : user enters seek command
+==seekforward==
+|||
+
+alt Resume state
+    user -> MusicPlayer : user enters seek+<time>(i.e seek+10)
+	MusicPlayer -> MusicPlayer : playback forwarded by 10s
+	MusicPlayer -> user :  plays song after seek
+	note right
+	    time can be any number like 30,50,45etc
+	end note
+	
+else pause state
+          
+	user -> MusicPlayer : user enters seek+<time>(i.e seek+10) when playback in pause state.
+	MusicPlayer -> MusicPlayer : playback forwarded by 10s
+	MusicPlayer -> user :after seek it moves to the particular time
+	note right
+	   after seek forward playback in pause state only.
+	end note
+else Stop state
+    user -> MusicPlayer : user enters seek+40
+    MusicPlayer -> user : Displays msg ERROR COMMAND
+    
+else exceeds the duration
+    user -> MusicPlayer : user enters seek+7000
+    MusicPlayer -> user : Exceeding  the duration of audio file.
+    note right
+	   if the song will be 3min(i.e 180sec).
+	end note
+else elapsed time
+     user -> MusicPlayer : user enters seek+30
+     MusicPlayer -> MusicPlayer : playback forwarded by 10s if it takes more than 30s
+     MusicPlayer -> user : display the error message.
+end
+==seekBackward==
+|||
+alt Resume state
+    user -> MusicPlayer : user enters seek-<time>(i.e seek+10)
+	MusicPlayer -> MusicPlayer : playback backwards by 10s
+	MusicPlayer -> user :  plays song after seek
+	note right
+	    time can be any number like 30,50,45etc
+	end note
+	
+else pause state
+          
+	user -> MusicPlayer : user enters seek-<time>(i.e seek+10) when playback in pause state.
+	MusicPlayer -> MusicPlayer : playback backwards by 10s
+	MusicPlayer -> user :after seek it moves to the particular time
+	note right
+	   after seek backward, playback in pause state only.
+	end note
+else Stop state
+    user -> MusicPlayer : user enters seek-40
+    MusicPlayer -> user : Displays msg ERROR COMMAND
+    
+else exceeds the duration
+    user -> MusicPlayer : user enters seek-70
+    MusicPlayer -> user : Exceeding  the duration of audio file.
+    note right
+	   if the playback is playing starts the new song
+	   at 10sec then it shows error msg.
+	end note
+else elapsed time
+     user -> MusicPlayer : user enters seek-30
+     MusicPlayer -> MusicPlayer : playback backwards by 10s if it takes more than 30s
+     MusicPlayer -> user : display the error message.
+end
+@enduml
+
+=============================== updates seek==============================================================================================
+
+@startuml
+activate user
+activate MusicPlayer
+user -> MusicPlayer : user enters seek command
+==seekforward==
+|||
+
+alt Resume state
+    user -> MusicPlayer : user enters seek+<time>(i.e seek+10)
+	MusicPlayer -> MusicPlayer : playback forwards by 10s
+	MusicPlayer -> user :  plays song after seek
+	note right
+	    time can be any number like 30,50,45etc
+	end note
+	
+else pause state
+	MusicPlayer -> user :after seek it moves to the particular time
+	note right
+	   after seek forward, playback in pause state only.
+	end note
+else Stop state
+    MusicPlayer -> user : Displays msg ERROR COMMAND
+    
+else exceeds the duration
+    user -> MusicPlayer : user enters seek+7000
+    MusicPlayer -> user : Exceeding  the duration of audio file.
+    note right
+	   if the song will be 3min(i.e 180sec).
+	end note
+end
+==seekBackward==
+|||
+alt Resume state
+    user -> MusicPlayer : user enters seek-<time>(i.e seek+10)
+	MusicPlayer -> MusicPlayer : playback backwards by 10s
+	MusicPlayer -> user :  plays song after seek
+	note right
+	    time can be any number like 30,50,45etc
+	end note
+	
+else pause state
+          
+    MusicPlayer -> user :after seek it moves to the particular time
+	note right
+	   after seek backward, playback in pause state only.
+	end note
+else Stop state
+    MusicPlayer -> user : Displays msg ERROR COMMAND
+    
+else exceeds the duration
+    MusicPlayer -> user : Exceeding  the duration of audio file.
+    note right
+	   if the playback is playing a audio file  
+	   at 10sec then  user seeks backward by 30s 
+	   it shows error msg.
+	end note
+end
+@enduml
+==============================================INTIALIZATION OF HEADER=======================================================
+@startuml
+actor user
+activate Application
+activate MusicPlayer 
+activate ALSA
+user -> Application : input files
+Application -> MusicPlayer : Fetching input file
+MusicPlayer -> ALSA : ALSA hardware init 
+       
+    note right
+        snd_pcm_open(parameters)
+        snd_pcm_hw_params_alloca(parameters)
+        snd_pcm_hw_params_any(parameters);
+        snd_pcm_hw_params_set_access(parameters)
+        snd_pcm_hw_params_set_format(parameters)
+    end note     
+alt Hardware init failure case
+    ALSA -> MusicPlayer : return failure
+    MusicPlayer -> user : Hardware Initialisation error
+else Hardware init Success Case
+    ALSA -> MusicPlayer : return success
+    |||
+    
+	MusicPlayer -> ALSA : samplerate,time and channel
+	note left
+	    Fetching samplingrate,time
+	    and channel from the
+	    wave header
+	end note    
+	ALSA -> user : audio 
+end
+
+@enduml
+===========================================PLay Or Pause===============================================	
+
+@startuml
+actor user
+activate Application
+activate MusicPlayer 
+activate ALSA
+user -> Application : p or P entered
+Application -> MusicPlayer : pause_resume() is called
+
+       
+    note right 
+        checkstatus() is called 
+        check status of the playback.
+    end note    
+alt resume state
+    MusicPlayer -> ALSA : snd_pcm_pause()is called
+    ALSA -> user  : Playback is paused
+    note right
+        Parameters
+        1.PCM handle
+        2.enable 0 = resume, 1 = pause
+    end note    
+else pause state
+    MusicPlayer -> ALSA : snd_pcm_pause() is called
+    ALSA -> user : Playback is resumed
+    
+else stop state
+    MusicPlayer -> ALSA : resume function is called
+    ALSA -> user : Playback is resumed
+    note right
+        playback starts from begining.
+    end note    
+end
+
+@enduml
+=============================================volume control===========================================================================
+
+@startuml
+actor user
+activate Application
+activate MusicPlayer 
+activate ALSA
+user -> Application : + or - entered
+Application -> MusicPlayer : vol_contrl() is called
+alt + is entered
+    MusicPlayer -> ALSA : SetAlsaMasterVolume()
+    ALSA -> user  : Increases the volume by 10%
+    note right
+        Parameters
+         +10 is passed
+    end note    
+else - is entered
+    MusicPlayer -> ALSA : SetAlsaMasterVolume()
+    ALSA -> user  : Decreases the volume by 10%
+    note right
+        Parameters
+         -10 is passed
+    end note
+end
+
+@enduml
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+@startuml
+actor user
+activate Application
+activate MusicPlayer 
+activate ALSA
+user -> Application : + or - entered
+Application -> MusicPlayer : vol_contrl() is called
+    note right 
+        check status of the playback
+    end note    
+alt + is entered
+    alt pause or resume state
+        MusicPlayer -> ALSA : volume related functions is called
+        ALSA -> user  : volume increased by 10%
+    else stop state
+    MusicPlayer -> user : volume is not increased
+    end
+    note right
+        snd_mixer_selem_id_set_index();
+        snd_mixer_selem_id_set_name();
+        snd_mixer_elem_t* elem = snd_mixer_find_selem();
+        snd_mixer_selem_get_playback_volume_range();
+        snd_mixer_selem_set_playback_volume_all();
+    end note
+       
+else - is entered
+    
+    
+    alt pause or resume state
+        MusicPlayer -> ALSA : volume related functions is called
+        ALSA -> user  : volume Decreased by 10%
+    else stop state
+    MusicPlayer -> user : volume is not decreased
+    end
+    
+end
+
+@enduml
+=================================================================SEEK CONTROL==================================================
+
+@startuml
+actor user
+activate Application
+activate MusicPlayer 
+activate ALSA
+destroy ALSA
+user -> Application :S + <time> is entered
+Application -> MusicPlayer : rseek() is called
+    note right 
+        check status of the playback
+    end note    
+
+    alt pause or resume state
+         MusicPlayer -> user  : Playback seek forward by <time>sec 
+         note right:  Playback in the same state \nwhen did seek forward.
+    else stop state
+    MusicPlayer -> user : Playback is not seek forward
+    
+    else Exceeds the duration of current song
+    MusicPlayer -> user : Playback remains same
+    note right: doesn't effect to the song,\ncurrent playback is running
+    end
+    
+       
+user->Application :S-<time> is entered
+
+    Application -> MusicPlayer : lseek() is called
+    
+   
+        alt pause or resume state
+         MusicPlayer -> user  : Playback seek backward by <time>sec 
+         note right:Playback in the same state \nwhen did seek backward.
+    else stop state
+    MusicPlayer -> user : Playback is not seek backward
+    
+    else Exceeds the duration of current song
+    MusicPlayer -> user : Playback remains same
+    note right: doesn't effect to the song,\ncurrent playback is running
+    end
+    
+
+@enduml
+===================================next/prev===============================================================
+@startuml
+actor user
+activate Application
+activate MusicPlayer 
+activate ALSA
+user -> Application : > is entered
+Application -> MusicPlayer : next() is called
+    note right 
+        check status of the playback
+    end note    
+
+    alt pause or resume state
+         MusicPlayer -> user  : Playback move to next track
+         note right: Playback in the same state when did prev track.
+    else stop state
+    MusicPlayer -> user : Playback is not move to next track
+    
+    else when there is no next song
+    MusicPlayer -> user : Playback is remains same
+    note right: doesn't effect to the song,\ncurrent playback is running
+    end
+    
+       
+user->Application :< is entered
+
+    Application -> MusicPlayer : prev() is called
+    
+   
+        alt pause or resume state
+         MusicPlayer -> user  : Playback move to prev track
+         note right: Playback in the same state when did next track.
+    MusicPlayer -> user : Playback not move to prev track
+    
+    else Exceeds the duration of current song
+    MusicPlayer -> user : Playback is remains same
+    note right: doesn't effect to the song,\ncurrent playback is running
+    end
+    
+
+@enduml
